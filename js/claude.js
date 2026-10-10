@@ -25,9 +25,11 @@ async function callTool({ system, prompt, tool, maxTokens = 1500 }) {
       body: JSON.stringify({
         model: s.model || 'claude-sonnet-5-5',
         max_tokens: maxTokens,
-        system,
+        // Newer models don't allow forcing a specific tool, so we ask firmly
+        // and fall back to reading JSON from the text if needed.
+        system: `${system}\n\nAlways answer by calling the ${tool.name} tool exactly once. Do not reply with plain text.`,
         tools: [tool],
-        tool_choice: { type: 'tool', name: tool.name },
+        tool_choice: { type: 'auto' },
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -39,12 +41,16 @@ async function callTool({ system, prompt, tool, maxTokens = 1500 }) {
     try { const j = await res.json(); if (j?.error?.message) msg += `: ${j.error.message}`; } catch { /* ignore */ }
     if (res.status === 401) msg = 'The API key was rejected. Check it in Ajustes.';
     if (res.status === 429) msg = 'Rate limited. Wait a moment and try again.';
+    if (res.status === 404 && /model/i.test(msg)) msg = 'That model name was not found. Pick another model in Ajustes.';
     throw new AIError(msg);
   }
   const data = await res.json();
   const block = (data.content || []).find((b) => b.type === 'tool_use');
-  if (!block) throw new AIError('Unexpected reply from Claude.');
-  return block.input;
+  if (block) return block.input;
+  const text = (data.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('');
+  const json = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+  try { if (json) return JSON.parse(json); } catch { /* fall through */ }
+  throw new AIError('Claude replied in an unexpected format. Try again.');
 }
 
 const regionText = (r) => (r === 'ca'

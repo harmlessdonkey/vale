@@ -1,5 +1,5 @@
 // Offline support: serve the app from cache, refresh it in the background.
-const CACHE = 'vale-v1';
+const CACHE = 'vale-v2';
 const SHELL = [
   './', 'index.html', 'css/app.css', 'manifest.webmanifest',
   'js/app.js', 'js/store.js', 'js/srs.js', 'js/claude.js', 'js/speech.js', 'js/ui.js', 'js/items.js',
