@@ -2,12 +2,12 @@ import { getState, settings, setSettings, getItem, deleteItem, onChange, resetAl
 import { TENSES } from './conjugator.js';
 import { hasKey, ping, AIError } from './claude.js';
 import { addWord, enrichItem, verbOf, notesBox, regionalBox, tagChips, conjExplorer, articleFor, speakBtn, TYPE_LABEL } from './items.js';
-import { spanishVoices, speak, canSpeak } from './speech.js';
+import { spanishVoices, canSpeak, stop as stopSpeech, diagnose } from './speech.js';
 import { ACTIVITIES, getActivity } from './activities/index.js';
 import { cardKey, get as srsGet } from './srs.js';
 import { h, mount, icon, toast, relTime } from './ui.js';
 
-export const VERSION = '1.2';
+export const VERSION = '1.3';
 
 async function forceUpdate() {
   try {
@@ -217,7 +217,12 @@ function viewSettings() {
       canSpeak() ? [h('label', { class: 'field-label' }, 'Voice', voiceSel),
         h('label', { class: 'field-label' }, 'Speed', rate),
         h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: s.autoSpeak !== false, onchange: (e) => setSettings({ autoSpeak: e.target.checked }) }), h('span', {}, h('span', { class: 'check-title' }, 'Read cards aloud automatically'))),
-        h('button', { class: 'btn sm', onclick: () => speak('Hola, ¿qué tal? Vamos a practicar un poco.') }, icon('speaker', 18), 'Try it')]
+        (() => {
+          const out = h('p', { class: 'muted small' });
+          return h('div', {},
+            h('button', { class: 'btn sm', onclick: () => { out.textContent = 'Starting…'; diagnose((m) => { out.textContent = m; }); } }, icon('speaker', 18), 'Try it'),
+            out);
+        })()]
         : h('p', { class: 'muted small' }, 'Speech is not available in this browser.')),
     h('section', { class: 'card' },
       h('h3', {}, 'Session'),
@@ -240,7 +245,7 @@ function setChrome(title, showBack, tab) {
 function route() {
   const hash = location.hash || '#/';
   const [, view, arg] = hash.split('/');
-  window.speechSynthesis?.cancel();
+  stopSpeech();
   if (view === 'library') viewLibrary();
   else if (view === 'item') viewItem(arg);
   else if (view === 'act') viewActivity(arg);
