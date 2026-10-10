@@ -7,6 +7,18 @@ import { ACTIVITIES, getActivity } from './activities/index.js';
 import { cardKey, get as srsGet } from './srs.js';
 import { h, mount, icon, toast, relTime } from './ui.js';
 
+export const VERSION = '1.2';
+
+async function forceUpdate() {
+  try {
+    const regs = await navigator.serviceWorker?.getRegistrations?.() || [];
+    await Promise.all(regs.map((r) => r.unregister()));
+    const keys = await caches?.keys?.() || [];
+    await Promise.all(keys.map((k) => caches.delete(k)));
+  } catch { /* ignore */ }
+  location.reload();
+}
+
 const main = document.getElementById('main');
 const titleEl = document.getElementById('title');
 const backBtn = document.getElementById('back');
@@ -68,7 +80,8 @@ function viewHome() {
     })),
     recent.length ? h('section', { class: 'card' },
       h('div', { class: 'card-head' }, h('h3', {}, 'Recién añadidas'), h('a', { href: '#/library', class: 'small' }, 'All')),
-      h('div', { class: 'list' }, recent.map(itemRow))) : null);
+      h('div', { class: 'list' }, recent.map(itemRow))) : null,
+    h('p', { class: 'muted small center' }, `v${VERSION}`));
 }
 
 function itemRow(it) {
@@ -211,7 +224,9 @@ function viewSettings() {
       h('label', { class: 'field-label' }, 'Cards per round',
         h('select', { class: 'field', onchange: (e) => setSettings({ sessionSize: Number(e.target.value) }) }, [5, 10, 15, 20].map((n) => h('option', { value: n, selected: s.sessionSize === n }, n)))),
       h('button', { class: 'btn danger sm', onclick: () => { if (confirm('Delete all words, progress and stories on this phone?')) { resetAll(); toast('Everything reset'); nav('#/'); } } }, 'Reset everything')),
-    h('p', { class: 'muted small center pad' }, 'Vale v1'));
+    h('div', { class: 'center pad' },
+      h('p', { class: 'muted small' }, `Vale version ${VERSION}`),
+      h('button', { class: 'btn ghost sm', onclick: forceUpdate }, 'Check for updates')));
 }
 
 // ---------------- chrome + router ----------------
