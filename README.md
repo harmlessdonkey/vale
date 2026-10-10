@@ -13,7 +13,8 @@ No App Store, no server: it's a static web app on GitHub Pages that you add to y
 - **Verbos**: typed drills. Get it right and Vale tells you *why* it looks like that (e.g. "-ir stem-changer: pidió, pidieron").
 - **Tarjetas**: quick cards with just "Got it" / "Not yet".
 - **Región**: Spain or Central America (vos, ustedes, regional vocabulary).
-- **Listen**: uses the Spanish voices built into your phone.
+- **Listen**: uses the Spanish voices built into your phone and picks the most natural one it can find (Premium, then Enhanced). Download a better voice in iPhone Settings → Accessibility → Spoken Content → Voices → Spanish.
+- **Backups**: Ajustes → Copia de seguridad saves a JSON file (without your API key) and can restore it.
 
 ## Set up (once)
 
@@ -27,7 +28,8 @@ Get a key at console.anthropic.com and set a monthly spend limit there. Typical 
 
 ## Notes
 
-- Your words, progress and API key are stored only on the phone, inside the home-screen app.
+- Your words, progress and API key are stored only on the phone, inside the home-screen app. GitHub only hosts the code; nothing you add is sent there.
+- Audio is generated live by the phone and never saved, so no sound files build up. Stories are capped at the 30 most recent.
 - iPhone keeps home-screen app storage separate from Safari, so always open Vale from the home-screen icon.
 - Quick add: copy a word (e.g. in WhatsApp), open Vale and tap the paste button next to the add box.
 

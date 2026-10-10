@@ -316,3 +316,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 #toast.bad { background: var(--bad); color: #fff; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.voice-list { margin-top: 10px; }
+.voice-list summary { cursor: pointer; color: var(--muted, inherit); }
+.voice-list pre { white-space: pre-wrap; margin: 8px 0 0; font-family: inherit; line-height: 1.5; }

@@ -1,13 +1,13 @@
-import { getState, settings, setSettings, getItem, deleteItem, onChange, resetAll } from './store.js';
+import { getState, settings, setSettings, getItem, deleteItem, onChange, resetAll, exportData, importData } from './store.js';
 import { TENSES } from './conjugator.js';
 import { hasKey, ping, AIError } from './claude.js';
 import { addWord, enrichItem, verbOf, notesBox, regionalBox, tagChips, conjExplorer, articleFor, speakBtn, TYPE_LABEL } from './items.js';
-import { spanishVoices, canSpeak, stop as stopSpeech, diagnose } from './speech.js';
+import { spanishVoices, canSpeak, stop as stopSpeech, diagnose, voiceReport, pickVoice, qualityLabel } from './speech.js';
 import { ACTIVITIES, getActivity } from './activities/index.js';
 import { cardKey, get as srsGet } from './srs.js';
 import { h, mount, icon, toast, relTime } from './ui.js';
 
-export const VERSION = '1.3';
+export const VERSION = '1.4';
 
 async function forceUpdate() {
   try {
@@ -154,6 +154,32 @@ function viewActivity(id) {
   a.start(root, ctx);
 }
 
+async function backup() {
+  const json = JSON.stringify(exportData(), null, 1);
+  const name = `vale-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const file = new File([json], name, { type: 'application/json' });
+  try {
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: 'Vale backup' }); return; }
+  } catch (e) { if (e.name === 'AbortError') return; }
+  const a = h('a', { href: URL.createObjectURL(file), download: name });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+const restoreInput = h('input', { type: 'file', accept: '.json,application/json', hidden: true, onchange: async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = '';
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!confirm(`Replace everything on this phone with the backup (${data.items?.length ?? 0} words)?`)) return;
+    const n = importData(data);
+    toast(`Restored ${n} words`, 'good');
+    nav('#/');
+  } catch (err) { toast(err.message || 'Could not read that file', 'bad'); }
+} });
+document.body.append(restoreInput);
+
 function viewSettings() {
   setChrome('Ajustes', false, 'settings');
   const s = settings();
@@ -184,8 +210,8 @@ function viewSettings() {
 
   const voices = spanishVoices();
   const voiceSel = h('select', { class: 'field', 'aria-label': 'Voice', onchange: (e) => setSettings({ voiceURI: e.target.value }) },
-    h('option', { value: '' }, 'Automatic (matches region)'),
-    voices.map((v) => h('option', { value: v.voiceURI, selected: v.voiceURI === s.voiceURI }, `${v.name} (${v.lang})`)));
+    h('option', { value: '' }, (() => { const v = !s.voiceURI && pickVoice(); return v ? `Automatic (${v.name})` : 'Automatic (best available)'; })()),
+    voices.map((v) => h('option', { value: v.voiceURI, selected: v.voiceURI === s.voiceURI }, `${v.name} (${v.lang}${qualityLabel(v) ? `, ${qualityLabel(v)}` : ''})`)));
   const rate = h('input', { type: 'range', min: '0.6', max: '1.2', step: '0.05', value: String(s.rate), 'aria-label': 'Speed', onchange: (e) => setSettings({ rate: Number(e.target.value) }) });
 
   const models = [['claude-sonnet-5-5', 'Sonnet (best stories)'], ['claude-haiku-5-5', 'Haiku (fastest, cheapest)']];
@@ -221,9 +247,18 @@ function viewSettings() {
           const out = h('p', { class: 'muted small' });
           return h('div', {},
             h('button', { class: 'btn sm', onclick: () => { out.textContent = 'Starting…'; diagnose((m) => { out.textContent = m; }); } }, icon('speaker', 18), 'Try it'),
-            out);
+            out,
+            h('details', { class: 'voice-list' },
+              h('summary', { class: 'small' }, 'Voices this phone offers'),
+              h('pre', { class: 'small muted' }, voiceReport())));
         })()]
         : h('p', { class: 'muted small' }, 'Speech is not available in this browser.')),
+    h('section', { class: 'card' },
+      h('h3', {}, 'Copia de seguridad'),
+      h('p', { class: 'muted small' }, `Your ${getState().items.length} words, progress and stories live only on this phone. Save a backup now and then (to Files or iCloud). Your API key is not included.`),
+      h('div', { class: 'row-actions' },
+        h('button', { class: 'btn sm', onclick: backup }, 'Save backup'),
+        h('button', { class: 'btn ghost sm', onclick: () => restoreInput.click() }, 'Restore'))),
     h('section', { class: 'card' },
       h('h3', {}, 'Session'),
       h('label', { class: 'field-label' }, 'Cards per round',

@@ -1,6 +1,6 @@
 // Offline support: always try the network first so updates arrive straight
 // away, and fall back to the cached copy when there is no connection.
-const CACHE = 'vale-v3';
+const CACHE = 'vale-v4';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {

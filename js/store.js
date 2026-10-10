@@ -85,3 +85,23 @@ export function resetAll() {
   state = structuredClone(DEFAULTS);
   save();
 }
+
+// Backup: everything except the API key, so a backup file is safe to keep in iCloud.
+export function exportData() {
+  const { apiKey, ...rest } = state.settings;
+  return { app: 'vale', format: 1, exported: new Date().toISOString(), ...state, settings: rest };
+}
+
+export function importData(data) {
+  if (!data || data.app !== 'vale' || !Array.isArray(data.items)) throw new Error('That file is not a Vale backup.');
+  const apiKey = state.settings.apiKey;
+  state = {
+    ...structuredClone(DEFAULTS),
+    items: data.items,
+    srs: data.srs || {},
+    stories: Array.isArray(data.stories) ? data.stories : [],
+    settings: { ...DEFAULTS.settings, ...(data.settings || {}), apiKey },
+  };
+  save();
+  return state.items.length;
+}
